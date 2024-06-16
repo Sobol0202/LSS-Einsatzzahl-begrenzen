@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LSS Einsatzzahl begrenzen
 // @namespace    www.leitstellenspiel.de
-// @version      1.0
+// @version      1.1
 // @description  Überprüft die aktuelle Einsatzzahl und setzt automatisch Pause oder Run
 // @author       MissSobol
 // @match        https://www.leitstellenspiel.de/
@@ -13,7 +13,7 @@
     'use strict';
 
     // Festgelegter Grenzwert
-    const threshold = 500; // Hier festlegen, wie viele Einsätze maximal kommen sollen
+    const threshold = 500; // Hier den gewünschten Grenzwert festlegen
 
     // URLs für die unterschiedlichen Geschwindigkeiten abhängig vom Premium-Status
     const urlHighSpeed = "https://www.leitstellenspiel.de/missionSpeed?redirect_back=true&speed=6";
@@ -39,13 +39,13 @@
 
             // Überprüfen, ob die Gesamtzahl der Einsätze den Grenzwert überschreitet
             if (totalEinsaetze > threshold && !lastStateHighSpeed) {
-                // URL für Pause im Hintergrund aufrufen
-                fetch(urlHighSpeed).then(response => console.log('Geschwindigkeit auf Pause gesetzt:', response));
+                // URL für hohe Geschwindigkeit im Hintergrund aufrufen
+                fetch(urlHighSpeed).then(response => console.log('Pause gesetzt:', response));
                 lastStateHighSpeed = true;
             } else if (totalEinsaetze <= threshold && lastStateHighSpeed) {
-                // URL für Run im Hintergrund aufrufen, abhängig vom Premium-Status
+                // URL für niedrige Geschwindigkeit im Hintergrund aufrufen, abhängig vom Premium-Status
                 const urlLowSpeed = userPremium ? urlLowSpeedPremium : urlLowSpeedNonPremium;
-                fetch(urlLowSpeed).then(response => console.log('Geschwindigkeit auf Run gesetzt:', response));
+                fetch(urlLowSpeed).then(response => console.log('Run gesetzt:', response));
                 lastStateHighSpeed = false;
             }
         } else {
@@ -53,9 +53,27 @@
         }
     }
 
-    // Überprüfe die Einsatzzahl sofort beim Laden der Seite
-    checkEinsatzzahl();
+    // Funktion zum Einhaken in missionMarkerAdd
+    function hookMissionMarkerAdd() {
+        if (typeof window.missionMarkerAdd === 'function' && !window.missionMarkerAdd.logged) {
+            const originalFunction = window.missionMarkerAdd;
 
-    // Überprüfe die Einsatzzahl alle 30 Sekunden (30000 Millisekunden)
-    setInterval(checkEinsatzzahl, 30000);
+            window.missionMarkerAdd = function() {
+                //console.log('missionMarkerAdd function called with arguments:', arguments);
+                // Überprüfe die Einsatzzahl bei jedem Aufruf von missionMarkerAdd
+                checkEinsatzzahl();
+                return originalFunction.apply(this, arguments);
+            };
+            window.missionMarkerAdd.logged = true;
+        }
+    }
+
+    // MutationObserver zur Überwachung von Änderungen im DOM
+    const observer = new MutationObserver(() => {
+        hookMissionMarkerAdd();
+    });
+
+    observer.observe(document, { childList: true, subtree: true });
+
+    hookMissionMarkerAdd();
 })();
