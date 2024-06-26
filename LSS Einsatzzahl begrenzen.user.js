@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LSS Einsatzzahl begrenzen
 // @namespace    www.leitstellenspiel.de
-// @version      1.1
+// @version      1.2
 // @description  Überprüft die aktuelle Einsatzzahl und setzt automatisch Pause oder Run
 // @author       MissSobol
 // @match        https://www.leitstellenspiel.de/
@@ -12,8 +12,8 @@
 (function() {
     'use strict';
 
-    // Festgelegter Grenzwert
-    const threshold = 500; // Hier den gewünschten Grenzwert festlegen
+    // Festgelegter Grenzwert (Standardwert, wird durch Dialog ersetzt)
+    let threshold = 729;
 
     // URLs für die unterschiedlichen Geschwindigkeiten abhängig vom Premium-Status
     const urlHighSpeed = "https://www.leitstellenspiel.de/missionSpeed?redirect_back=true&speed=6";
@@ -59,7 +59,7 @@
             const originalFunction = window.missionMarkerAdd;
 
             window.missionMarkerAdd = function() {
-                //console.log('missionMarkerAdd function called with arguments:', arguments);
+                //console.log('missionMarkerAdd function called with arguments:', arguments, lastStateHighSpeed);
                 // Überprüfe die Einsatzzahl bei jedem Aufruf von missionMarkerAdd
                 checkEinsatzzahl();
                 return originalFunction.apply(this, arguments);
@@ -75,5 +75,64 @@
 
     observer.observe(document, { childList: true, subtree: true });
 
+    // Sofortiges Überprüfen, falls die Funktion bereits definiert ist
     hookMissionMarkerAdd();
+
+// Dialogfeld für die maximale Einsatzzahl
+function showThresholdDialog() {
+    const userInput = prompt('Bitte geben Sie die maximale Einsatzzahl ein:');
+    if (userInput !== null) {
+        const newThreshold = parseInt(userInput, 10);
+        if (!isNaN(newThreshold)) {
+            threshold = newThreshold;
+            // Speichern der neuen Einsatzzahl im LocalStorage
+            localStorage.setItem('max_einsatzzahl', threshold);
+            //console.log(`Maximale Einsatzzahl auf ${threshold} gesetzt.`);
+
+            // Aktualisiere den Text des Buttons mit der neuen Grenze
+            const button = document.getElementById('btnSetMaxEinsatz');
+            if (button) {
+                button.textContent = `Max. Einsatzzahl: ${threshold}`;
+            } else {
+                //console.log('Button nicht gefunden.');
+            }
+        } else {
+            alert('Ungültige Eingabe. Bitte geben Sie eine Zahl ein.');
+        }
+    }
+}
+
+// Button erstellen und einfügen
+function addThresholdButton() {
+    const existingButton = document.getElementById('mission_select_sicherheitswache');
+    if (existingButton && existingButton.parentNode) {
+        // Erstelle den neuen Button
+        const newButton = document.createElement('button');
+        newButton.id = 'btnSetMaxEinsatz'; // Setze eine ID für den Button
+        newButton.className = 'btn btn-xs btn-default'; // Füge die gewünschte Klasse hinzu
+        newButton.addEventListener('click', showThresholdDialog);
+
+        // Lade die aktuelle Grenze aus dem LocalStorage oder setze einen Standardwert
+        const storedThreshold = localStorage.getItem('max_einsatzzahl');
+        const currentThreshold = storedThreshold ? parseInt(storedThreshold, 10) : 729; // Standardwert 729
+
+        // Setze den Text des Buttons entsprechend der aktuellen Grenze
+        newButton.textContent = `Max. Einsatzzahl: ${currentThreshold}`;
+
+        // Füge den neuen Button nach dem existierenden Button ein
+        existingButton.parentNode.insertBefore(newButton, existingButton.nextSibling);
+    } else {
+        console.log('Das Element mit der ID "mission_select_sicherheitswache" oder dessen Elternknoten wurde nicht gefunden.');
+    }
+}
+
+// Initialisierung des Buttons
+addThresholdButton();
+
+    // Initialisierung der Einsatzzahl aus dem LocalStorage, falls vorhanden
+    const storedThreshold = localStorage.getItem('max_einsatzzahl');
+    if (storedThreshold !== null) {
+        threshold = parseInt(storedThreshold, 10);
+        console.log(`Gespeicherte maximale Einsatzzahl geladen: ${threshold}`);
+    }
 })();
