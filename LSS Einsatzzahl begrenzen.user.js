@@ -80,7 +80,7 @@
 
 // Dialogfeld für die maximale Einsatzzahl
 function showThresholdDialog() {
-    const userInput = prompt('Bitte geben Sie die maximale Einsatzzahl ein:');
+    const userInput = prompt('Bitt lege die maximale Einsatzzahl fest:');
     if (userInput !== null) {
         const newThreshold = parseInt(userInput, 10);
         if (!isNaN(newThreshold)) {
