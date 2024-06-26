@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         LSS Einsatzzahl begrenzen
 // @namespace    www.leitstellenspiel.de
-// @version      1.2
+// @version      1.3
 // @description  Überprüft die aktuelle Einsatzzahl und setzt automatisch Pause oder Run
 // @author       MissSobol
 // @match        https://www.leitstellenspiel.de/
 // @grant        none
 // ==/UserScript==
-/* global user_premium */
+/* global user_premium, mission_count_max */
 
 (function() {
     'use strict';
@@ -49,7 +49,7 @@
                 lastStateHighSpeed = false;
             }
         } else {
-            //console.log('Das Element mit der ID "mission_select_emergency" wurde nicht gefunden.');
+            console.log('Das Element mit der ID "mission_select_emergency" wurde nicht gefunden.');
         }
     }
 
@@ -78,61 +78,56 @@
     // Sofortiges Überprüfen, falls die Funktion bereits definiert ist
     hookMissionMarkerAdd();
 
-// Dialogfeld für die maximale Einsatzzahl
-function showThresholdDialog() {
-    const userInput = prompt('Bitt lege die maximale Einsatzzahl fest:');
-    if (userInput !== null) {
-        const newThreshold = parseInt(userInput, 10);
-        if (!isNaN(newThreshold)) {
-            threshold = newThreshold;
-            // Speichern der neuen Einsatzzahl im LocalStorage
-            localStorage.setItem('max_einsatzzahl', threshold);
-            //console.log(`Maximale Einsatzzahl auf ${threshold} gesetzt.`);
+    // Dialogfeld für die maximale Einsatzzahl
+    function showThresholdDialog() {
+        const maxAllowed = mission_count_max;
+        const userInput = prompt(`Bitte gib die maximale Einsatzzahl ein (bei mehr als ${maxAllowed} schaltet das Script nie um):`);
+        if (userInput !== null) {
+            const newThreshold = parseInt(userInput, 10);
+            if (!isNaN(newThreshold) && newThreshold >= 0) {
+                threshold = newThreshold;
+                // Speichern der neuen Einsatzzahl im LocalStorage
+                localStorage.setItem('max_einsatzzahl', threshold);
+                //console.log(`Maximale Einsatzzahl auf ${threshold} gesetzt.`);
 
-            // Aktualisiere den Text des Buttons mit der neuen Grenze
-            const button = document.getElementById('btnSetMaxEinsatz');
-            if (button) {
-                button.textContent = `Max. Einsatzzahl: ${threshold}`;
+                // Aktualisierung des Textes im Button mit der neuen Grenze
+                const button = document.getElementById('btnSetMaxEinsatz');
+                if (button) {
+                    button.textContent = `Max. Einsatzzahl: ${threshold}`;
+                } else {
+                    console.log('Button nicht gefunden.');
+                }
             } else {
-                //console.log('Button nicht gefunden.');
+                alert(`Ungültige Eingabe. Bitte gib eine Zahl größer oder gleich 0 ein.`);
             }
-        } else {
-            alert('Ungültige Eingabe. Bitte geben Sie eine Zahl ein.');
         }
     }
-}
 
-// Button erstellen und einfügen
-function addThresholdButton() {
-    const existingButton = document.getElementById('mission_select_sicherheitswache');
-    if (existingButton && existingButton.parentNode) {
-        // Erstelle den neuen Button
-        const newButton = document.createElement('button');
-        newButton.id = 'btnSetMaxEinsatz'; // Setze eine ID für den Button
-        newButton.className = 'btn btn-xs btn-default'; // Füge die gewünschte Klasse hinzu
-        newButton.addEventListener('click', showThresholdDialog);
+    // Button erstellen und einfügen
+    function addThresholdButton() {
+        const existingButton = document.getElementById('mission_select_sicherheitswache');
+        if (existingButton && existingButton.parentNode) {
+            // Erstelle den neuen Button
+            const newButton = document.createElement('button');
+            newButton.id = 'btnSetMaxEinsatz';
+            newButton.className = 'btn btn-xs btn-default';
+            newButton.addEventListener('click', showThresholdDialog);
 
-        // Lade die aktuelle Grenze aus dem LocalStorage oder setze einen Standardwert
-        const storedThreshold = localStorage.getItem('max_einsatzzahl');
-        const currentThreshold = storedThreshold ? parseInt(storedThreshold, 10) : 729; // Standardwert 729
+            // Lade die aktuelle Grenze aus dem LocalStorage oder setze einen Standardwert
+            const storedThreshold = localStorage.getItem('max_einsatzzahl');
+            const currentThreshold = storedThreshold ? parseInt(storedThreshold, 10) : 729; // Standardwert 729
 
-        // Setze den Text des Buttons entsprechend der aktuellen Grenze
-        newButton.textContent = `Max. Einsatzzahl: ${currentThreshold}`;
+            // Setze den Text des Buttons entsprechend der aktuellen Grenze
+            newButton.textContent = `Max. Einsatzzahl: ${currentThreshold}`;
 
-        // Füge den neuen Button nach dem existierenden Button ein
-        existingButton.parentNode.insertBefore(newButton, existingButton.nextSibling);
-    } else {
-        console.log('Das Element mit der ID "mission_select_sicherheitswache" oder dessen Elternknoten wurde nicht gefunden.');
+            // Füge den neuen Button nach dem existierenden Button ein
+            existingButton.parentNode.insertBefore(newButton, existingButton.nextSibling);
+        } else {
+            console.log('Das Element mit der ID "mission_select_sicherheitswache" oder dessen Elternknoten wurde nicht gefunden.');
+        }
     }
-}
 
-// Initialisierung des Buttons
-addThresholdButton();
+    // Initialisierung des Buttons
+    addThresholdButton();
 
-    // Initialisierung der Einsatzzahl aus dem LocalStorage, falls vorhanden
-    const storedThreshold = localStorage.getItem('max_einsatzzahl');
-    if (storedThreshold !== null) {
-        threshold = parseInt(storedThreshold, 10);
-        console.log(`Gespeicherte maximale Einsatzzahl geladen: ${threshold}`);
-    }
 })();
