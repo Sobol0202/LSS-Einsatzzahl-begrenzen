@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LSS Einsatzzahl begrenzen
 // @namespace    www.leitstellenspiel.de
-// @version      1.3
+// @version      1.4
 // @description  Überprüft die aktuelle Einsatzzahl und setzt automatisch Pause oder Run
 // @author       MissSobol
 // @match        https://www.leitstellenspiel.de/
@@ -13,7 +13,7 @@
     'use strict';
 
     // Festgelegter Grenzwert (Standardwert, wird durch Dialog ersetzt)
-    let threshold = 729;
+    let threshold = localStorage.getItem('max_einsatzzahl') ? parseInt(localStorage.getItem('max_einsatzzahl'), 10) : 729;
 
     // URLs für die unterschiedlichen Geschwindigkeiten abhängig vom Premium-Status
     const urlHighSpeed = "https://www.leitstellenspiel.de/missionSpeed?redirect_back=true&speed=6";
@@ -35,7 +35,7 @@
             const textContent = einsatzElement.textContent.trim();
             // Zahl nach dem / extrahieren
             const totalEinsaetze = parseInt(textContent.split('/')[1], 10);
-            //console.log(`Gesamtzahl der Einsätze: ${totalEinsaetze} | Premium: ${userPremium}`);
+            //console.log(`Gesamtzahl der Einsätze: ${totalEinsaetze} | Threshold: ${threshold} | Premium: ${userPremium}`);
 
             // Überprüfen, ob die Gesamtzahl der Einsätze den Grenzwert überschreitet
             if (totalEinsaetze > threshold && !lastStateHighSpeed) {
@@ -129,5 +129,8 @@
 
     // Initialisierung des Buttons
     addThresholdButton();
+
+    // Überprüfe die Einsatzzahl direkt beim Start des Skripts
+    checkEinsatzzahl();
 
 })();
